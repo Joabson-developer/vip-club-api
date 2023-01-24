@@ -3,14 +3,17 @@ const db = require("../db");
 module.exports = {
   getClients() {
     return new Promise((resolve, reject) => {
-      db.query("SELECT * FROM clients", (error, results) => {
-        if (error) {
-          reject(error);
-          return;
-        }
+      db.query(
+        "SELECT * FROM clients WHERE active = true",
+        (error, results) => {
+          if (error) {
+            reject(error);
+            return;
+          }
 
-        resolve(results);
-      });
+          resolve(results);
+        }
+      );
     });
   },
   searchClient({ client_id, name, cpf, birth_date, email }) {
@@ -212,6 +215,24 @@ module.exports = {
           const { insertId } = results;
 
           insertId ? resolve(insertId) : resolve(false);
+        }
+      );
+    });
+  },
+  toggleClient({ active = false, client_id }) {
+    return new Promise((resolve, reject) => {
+      db.query(
+        "UPDATE clients SET active = ? WHERE client_id = ?",
+        [active, client_id],
+        (error, results) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          const { affectedRows } = results;
+
+          affectedRows ? resolve(affectedRows) : resolve(false);
         }
       );
     });

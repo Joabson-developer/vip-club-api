@@ -11,6 +11,7 @@ const {
   createAddress,
   getClient,
   createClient,
+  toggleClient: deleteClient,
 } = require("../services/ClientsService");
 
 module.exports = {
@@ -79,6 +80,18 @@ module.exports = {
       });
     } else {
       res.status(303).json("Usuário existente");
+    }
+  },
+  async deleteClient(req, res) {
+    const { client_id } = req.params;
+    const client = await deleteClient({ client_id, active: false });
+
+    if (client) {
+      res.json("Cliente inativado com sucesso.");
+    } else {
+      res
+        .status(404)
+        .json("Cliente não existe na base de dados para inativação.");
     }
   },
 };
