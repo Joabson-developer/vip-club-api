@@ -12,6 +12,10 @@ const {
   getClient,
   createClient,
   toggleClient: deleteClient,
+  updateClient,
+  getPhones,
+  createPhones,
+  getInstallments,
 } = require("../services/ClientsService");
 
 module.exports = {
@@ -44,7 +48,7 @@ module.exports = {
     }
   },
   async createClient(req, res) {
-    const { address } = req.body;
+    const { address, phones } = req.body;
     const { city, state, country } = address;
 
     let { country_id } = await getCountry(country);
@@ -60,6 +64,7 @@ module.exports = {
     if (!address_id) address_id = await createAddress({ ...address, city_id });
 
     let { client_id } = await getClient(req.body);
+
     if (!client_id) {
       client_id = await createClient({
         ...req.body,
@@ -70,12 +75,20 @@ module.exports = {
         client_id,
       });
 
+      const affectedRows = await createPhones({
+        client_id,
+        phones,
+      });
+
+      const phonesClient = await getPhones({ client_id });
+
       res.status(201).json({
         client_id,
         name,
         created_at,
         birth_date,
         email,
+        phones: phonesClient,
         active: active === 1 ? true : false,
       });
     } else {
@@ -93,5 +106,27 @@ module.exports = {
         .status(404)
         .json("Cliente não existe na base de dados para inativação.");
     }
+  },
+  async updateClient(req, res) {
+    const data = req.body;
+
+    updateClient(data);
+
+    res.json("Show");
+  },
+  async getPhones(req, res) {
+    const { phones } = req.body;
+    const { client_id } = req.params;
+
+    const phonesClient = await getPhones({ phones, client_id });
+
+    res.json(phonesClient);
+  },
+  async getInstallments(req, res) {
+    const { client_id } = req.params;
+
+    const installments = await getInstallments({ ...req.body, client_id });
+
+    res.json(installments);
   },
 };

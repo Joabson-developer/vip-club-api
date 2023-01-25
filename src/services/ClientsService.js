@@ -1,6 +1,8 @@
+const { resolve } = require("node:path/win32");
 const db = require("../db");
 
 module.exports = {
+  // Clients
   getClients() {
     return new Promise((resolve, reject) => {
       db.query(
@@ -16,6 +18,7 @@ module.exports = {
       );
     });
   },
+  // Client
   searchClient({ client_id, name, cpf, birth_date, email }) {
     return new Promise((resolve, reject) => {
       db.query(
@@ -32,6 +35,25 @@ module.exports = {
           client ? resolve(client) : resolve(false);
         }
       );
+    });
+  },
+  updateClient({ name, cpf, address, birth_date, email, client_id }) {
+    return new Promise((resolve, reject) => {
+      // db.query(
+      //   "UPDATE clients SET name=?, cpf=?, birth_date=?, email=? WHERE client_id=?",
+      //   [name, cpf, birth_date, email, client_id],
+      //   (error, results) => {
+      //     if (error) {
+      //       reject(error);
+      //       return;
+      //     }
+
+      //     const [client] = results;
+
+      //     client ? resolve(client) : resolve(false);
+      //   }
+      // );
+      resolve(true);
     });
   },
   getClient({ client_id, name, cpf }) {
@@ -67,6 +89,64 @@ module.exports = {
           const { insertId } = results;
 
           insertId ? resolve(insertId) : resolve(false);
+        }
+      );
+    });
+  },
+  // Phone
+  getPhones({ client_id, phones }) {
+    const data = { ddds: [], numbers: [] };
+
+    if (phones) {
+      phones.forEach(({ ddd, number }) => {
+        data.ddds.push(ddd);
+        data.numbers.push(number);
+      });
+    }
+
+    const query = phones
+      ? `ddd IN [${data.ddds.join(",")}] AND number IN [${data.numbers.join(
+          ","
+        )}]`
+      : "1 = 1";
+
+    return new Promise((resolve, reject) => {
+      db.query(
+        "SELECT * FROM phones WHERE client_id = ? AND ?",
+        [client_id, query],
+        (error, results) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          const phones = results;
+
+          phones ? resolve(phones) : resolve(false);
+        }
+      );
+    });
+  },
+  createPhones({ client_id, phones }) {
+    const query = phones
+      ? phones
+          .map(({ ddd, number }) => `(${ddd}, ${number}, ${client_id})`)
+          .join(",")
+      : "";
+
+    return new Promise((resolve, reject) => {
+      db.query(
+        `INSERT INTO phones(ddd, number, client_id) VALUES ${query}`,
+        [],
+        (error, results) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          const { affectedRows } = results;
+
+          affectedRows ? resolve(affectedRows) : resolve(false);
         }
       );
     });
@@ -219,6 +299,8 @@ module.exports = {
       );
     });
   },
+
+  // Toggle Client
   toggleClient({ active = false, client_id }) {
     return new Promise((resolve, reject) => {
       db.query(
@@ -235,6 +317,68 @@ module.exports = {
           affectedRows ? resolve(affectedRows) : resolve(false);
         }
       );
+    });
+  },
+  //installments
+  getInstallments({ initial_date, final_date, paid, client_id }) {
+    let query = "";
+
+    if ((initial_date && final_date) || paid !== undefined || client_id) {
+      query = " WHERE ";
+
+      if (client_id) {
+        query += `client_id = ${client_id} `;
+      }
+
+      if (initial_date && final_date && client_id) {
+        query += `AND installment_date BETWEEN '${initial_date}' AND '${final_date}' `;
+      } else if (initial_date && final_date && !client_id) {
+        query += `installment_date BETWEEN '${initial_date}' AND '${final_date}' `;
+      }
+
+      if (paid !== undefined) {
+        if (client_id || (initial_date && final_date)) {
+          query += `AND paid = ${paid}`;
+        } else {
+          query += `paid = ${paid}`;
+        }
+      }
+    }
+
+    return new Promise((resolve, reject) => {
+      db.query(`SELECT * FROM installments ${query}`, [], (error, results) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        const installments = results.map((installment) => ({
+          ...installment,
+          paid: installment.paid ? true : false,
+        }));
+
+        installments ? resolve(installments) : resolve(false);
+      });
+    });
+  },
+  createInstallments({ name, acronym, ddi }) {
+    return new Promise((resolve, reject) => {
+      // db.query(
+      //   "INSERT INTO country(name, acronym, ddi) VALUES (?,?,?)",
+      //   [name, acronym, ddi],
+      //   (error, results) => {
+      //     if (error) {
+      //       reject(error);
+      //       return;
+      //     }
+
+      //     const { insertId } = results;
+
+      //     insertId ? resolve(insertId) : resolve(false);
+      //   }
+      // );
+
+      resolve(true);
     });
   },
 };
