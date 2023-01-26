@@ -1,5 +1,6 @@
-const { resolve } = require("node:path/win32");
 const db = require("../db");
+const numberOfMonths = require("../helpers/numberOfMonths");
+const addMonths = require("../helpers/addMonths");
 
 module.exports = {
   // Clients
@@ -361,24 +362,43 @@ module.exports = {
       });
     });
   },
-  createInstallments({ name, acronym, ddi }) {
+  createInstallments({ initial_date, final_date, client_id }) {
+    const numberOfInstallments =
+      numberOfMonths({ initial_date, final_date }) - 1;
+    const initialDate = new Date(initial_date);
+    const { query } = new Array(numberOfInstallments).fill("").reduce(
+      (acc, value) => {
+        const newDate = addMonths(acc.lastDate, 1);
+        return (acc = {
+          query: `${acc.query}, (${newDate.toLocaleDateString(
+            "en-CA"
+          )}, ${client_id})`,
+          lastDate: newDate,
+        });
+      },
+      {
+        lastDate: initialDate,
+        query: `VALUES (${initialDate.toLocaleDateString(
+          "en-CA"
+        )}, ${client_id})`,
+      }
+    );
+
     return new Promise((resolve, reject) => {
-      // db.query(
-      //   "INSERT INTO country(name, acronym, ddi) VALUES (?,?,?)",
-      //   [name, acronym, ddi],
-      //   (error, results) => {
-      //     if (error) {
-      //       reject(error);
-      //       return;
-      //     }
+      db.query(
+        `INSERT INTO installments(installment_date, client_id) ${query}`,
+        [],
+        (error, results) => {
+          if (error) {
+            reject(error);
+            return;
+          }
 
-      //     const { insertId } = results;
+          const { affectedRows } = results;
 
-      //     insertId ? resolve(insertId) : resolve(false);
-      //   }
-      // );
-
-      resolve(true);
+          affectedRows ? resolve(affectedRows) : resolve(false);
+        }
+      );
     });
   },
 };

@@ -10,6 +10,7 @@ const {
   updateClient,
   getPhones,
   getInstallments,
+  createInstallments,
 } = require("./controllers/ClientsController");
 
 router.get("/clients", getClients);
@@ -22,5 +23,6 @@ router.delete("/client/:client_id", deleteClient);
 router.post("/phones/:client_id", getPhones);
 router.post("/get-installments", getInstallments);
 router.post("/get-installments/:client_id", getInstallments);
+router.post("/create-installments/:client_id", createInstallments);
 
 module.exports = router;

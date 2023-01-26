@@ -16,6 +16,7 @@ const {
   getPhones,
   createPhones,
   getInstallments,
+  createInstallments,
 } = require("../services/ClientsService");
 
 module.exports = {
@@ -126,6 +127,13 @@ module.exports = {
     const { client_id } = req.params;
 
     const installments = await getInstallments({ ...req.body, client_id });
+
+    res.json(installments);
+  },
+  async createInstallments(req, res) {
+    const { client_id } = req.params;
+
+    const installments = await createInstallments({ ...req.body, client_id });
 
     res.json(installments);
   },
